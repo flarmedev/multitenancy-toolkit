@@ -19,6 +19,13 @@
       "Tests\\": "tests/"
     }
   },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Flarme\\MultitenancyToolkit\\MultitenancyToolkitProvider"
+      ]
+    }
+  },
   "authors": [
     {
       "name": "Flarme",
