@@ -12,7 +12,7 @@ abstract class ServiceProvider extends BaseServiceProvider
      */
     protected function loadLandlordMigrationsFrom(array | string $paths): void
     {
-        $this->callAfterResolving('migrator', function ($migrator) use ($paths) {
+        $this->callAfterResolving('tenant-migrator', function ($migrator) use ($paths) {
             foreach ((array) $paths as $path) {
                 /** @var Migrator $migrator */
                 $migrator->landlordPath($path);
@@ -25,10 +25,19 @@ abstract class ServiceProvider extends BaseServiceProvider
      */
     protected function loadTenantMigrationsFrom(array | string $paths): void
     {
-        $this->callAfterResolving('migrator', function ($migrator) use ($paths) {
+        $this->callAfterResolving('tenant-migrator', function ($migrator) use ($paths) {
             foreach ((array) $paths as $path) {
                 /** @var Migrator $migrator */
                 $migrator->tenantPath($path);
+            }
+        });
+    }
+
+    protected function loadMigrationsFrom($paths): void
+    {
+        $this->callAfterResolving('tenant-migrator', function ($migrator) use ($paths) {
+            foreach ((array) $paths as $path) {
+                $migrator->path($path);
             }
         });
     }

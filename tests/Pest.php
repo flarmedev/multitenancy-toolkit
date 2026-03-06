@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/Feature/Fixtures/helpers.php';
+
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
