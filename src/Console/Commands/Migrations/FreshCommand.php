@@ -25,7 +25,7 @@ class FreshCommand extends BaseCommand
      */
     protected $migrator;
 
-    protected $signature = 'migrate:fresh
+    protected $signature = 'tenancy:migrate:fresh
                 {--database= : The database connection to use}
                 {--drop-views : Drop all tables and views}
                 {--drop-types : Drop all tables and types (Postgres only)}
@@ -39,6 +39,11 @@ class FreshCommand extends BaseCommand
                 {--landlord : Run migrations only for the landlord database}
                 {--tenants : Run migrations only for all tenant databases}
                 {--tenant= : Run migrations only for the given tenant id}';
+
+    public function __construct(Migrator $migrator)
+    {
+        parent::__construct($migrator);
+    }
 
     public function handle(): int
     {

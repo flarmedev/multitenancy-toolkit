@@ -6,9 +6,6 @@ use Flarme\MultitenancyToolkit\Console\Commands\Migrations\FreshCommand;
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\MigrateCommand;
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\RollbackCommand;
 use Flarme\MultitenancyToolkit\Database\Migrations\Migrator;
-use Illuminate\Database\Console\Migrations\FreshCommand as BaseFreshCommand;
-use Illuminate\Database\Console\Migrations\MigrateCommand as BaseMigrateCommand;
-use Illuminate\Database\Console\Migrations\RollbackCommand as BaseRollbackCommand;
 
 class MultitenancyToolkitProvider extends ServiceProvider
 {
@@ -21,18 +18,7 @@ class MultitenancyToolkitProvider extends ServiceProvider
 
             return new Migrator($repository, $app['db'], $app['files'], $app['events']);
         });
-
-        $this->app->singleton(BaseMigrateCommand::class, function ($app) {
-            return new MigrateCommand($app['tenant-migrator'], $app['events']);
-        });
-
-        $this->app->singleton(BaseFreshCommand::class, function ($app) {
-            return new FreshCommand($app['tenant-migrator']);
-        });
-
-        $this->app->singleton(BaseRollbackCommand::class, function ($app) {
-            return new RollbackCommand($app['tenant-migrator']);
-        });
+        $this->app->alias('tenant-migrator', Migrator::class);
     }
 
     public function boot(): void
@@ -40,6 +26,12 @@ class MultitenancyToolkitProvider extends ServiceProvider
         $this->app['router']->middlewareGroup('tenant', config('multitenancy-toolkit.tenant_middlewares'));
 
         if ($this->app->runningInConsole()) {
+            $this->commands([
+                MigrateCommand::class,
+                FreshCommand::class,
+                RollbackCommand::class,
+            ]);
+
             $this->publishes(
                 [dirname(__DIR__) . '/config/multitenancy-toolkit.php' => config_path('multitenancy-toolkit.php')],
                 'multitenancy-toolkit-config'

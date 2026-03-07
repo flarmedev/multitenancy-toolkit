@@ -24,7 +24,7 @@ class RollbackCommand extends BaseCommand
      */
     protected $migrator;
 
-    protected $signature = 'migrate:rollback
+    protected $signature = 'tenancy:migrate:rollback
                 {--database= : The database connection to use}
                 {--force : Force the operation to run when in production}
                 {--path=* : The path(s) to the migrations files to be executed}
@@ -36,6 +36,11 @@ class RollbackCommand extends BaseCommand
                 {--landlord : Run migrations only for the landlord database}
                 {--tenants : Run migrations only for all tenant databases}
                 {--tenant= : Run migrations only for the given tenant id}';
+
+    public function __construct(Migrator $migrator)
+    {
+        parent::__construct($migrator);
+    }
 
     /**
      * @throws Throwable

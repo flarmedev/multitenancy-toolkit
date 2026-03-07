@@ -5,6 +5,7 @@ namespace Flarme\MultitenancyToolkit\Console\Commands\Migrations;
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\HandlesTenantCommands;
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\ResolvesMigrationPaths;
 use Flarme\MultitenancyToolkit\Database\Migrations\Migrator;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Console\Migrations\MigrateCommand as BaseCommand;
 use Throwable;
 
@@ -20,7 +21,7 @@ class MigrateCommand extends BaseCommand
      */
     protected $migrator;
 
-    protected $signature = 'migrate {--database= : The database connection to use}
+    protected $signature = 'tenancy:migrate {--database= : The database connection to use}
                 {--force : Force the operation to run when in production}
                 {--path=* : The path(s) to the migrations files to be executed}
                 {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
@@ -33,6 +34,11 @@ class MigrateCommand extends BaseCommand
                 {--landlord : Run migrations only for the landlord database}
                 {--tenants : Run migrations only for all tenant databases}
                 {--tenant= : Run migrations only for the given tenant id}';
+
+    public function __construct(Migrator $migrator, Dispatcher $dispatcher)
+    {
+        parent::__construct($migrator, $dispatcher);
+    }
 
     /**
      * @throws Throwable
