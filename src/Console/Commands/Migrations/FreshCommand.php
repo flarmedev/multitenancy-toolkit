@@ -4,6 +4,7 @@ namespace Flarme\MultitenancyToolkit\Console\Commands\Migrations;
 
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\HandlesTenantCommands;
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\HandlesTenantDatabasesDrop;
+use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\ResolvesMigrationPaths;
 use Flarme\MultitenancyToolkit\Database\Migrations\Migrator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Console\Migrations\FreshCommand as BaseCommand;
@@ -17,6 +18,7 @@ class FreshCommand extends BaseCommand
 {
     use HandlesTenantCommands;
     use HandlesTenantDatabasesDrop;
+    use ResolvesMigrationPaths;
 
     /**
      * The migrator instance.
@@ -148,8 +150,8 @@ class FreshCommand extends BaseCommand
 
         $this->call('migrate', array_filter([
             '--database' => $database,
-            '--path' => $this->option('path'),
-            '--realpath' => $this->option('realpath'),
+            '--path' => $this->getMigrationPaths(),
+            '--realpath' => true,
             '--schema-path' => $this->option('schema-path'),
             '--force' => true,
             '--step' => $this->option('step'),
@@ -173,6 +175,16 @@ class FreshCommand extends BaseCommand
         $connection = DB::connection($database);
 
         return $connection->getDriverName() === 'sqlite' && $connection->transactionLevel() > 0;
+    }
+
+    protected function usingRealPath(): bool
+    {
+        return $this->input->hasOption('realpath') && $this->option('realpath');
+    }
+
+    protected function getMigrationPath(): string
+    {
+        return $this->laravel->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
     }
 
     protected function dropAllSqliteObjectsInTransaction(?string $database): void

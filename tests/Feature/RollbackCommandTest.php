@@ -13,6 +13,27 @@ describe('Single database setup', function () {
             ->expectsOutputToContain('0001_01_01_000002_create_tenant_probe_table')
             ->assertExitCode(0);
     });
+
+    it('delegates to laravel rollback migrations for an absolute path', function () {
+        $path = realpath(__DIR__ . '/Fixtures/migrations');
+
+        expect($path)->toBeString();
+
+        artisan('tenancy:migrate', [
+            '--path' => [$path],
+            '--realpath' => true,
+        ])->assertExitCode(0);
+
+        artisan('tenancy:migrate:rollback', [
+            '--path' => [$path],
+            '--realpath' => true,
+        ])
+            ->expectsOutputToContain('Defaulting to Laravel default rollback migrations.')
+            ->expectsOutputToContain('0001_01_01_000000_create_direct_probe_table')
+            ->doesntExpectOutputToContain('0001_01_01_000001_create_landlord_probe_table')
+            ->doesntExpectOutputToContain('0001_01_01_000002_create_tenant_probe_table')
+            ->assertExitCode(0);
+    });
 });
 
 describe('Multi database setup', function () {
