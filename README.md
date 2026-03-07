@@ -59,13 +59,13 @@ Main config file: `config/multitenancy-toolkit.php`
 
 ## Migration Commands
 
-This package replaces Laravel migration commands with tenant-aware variants.
+This package provides tenant-aware migration commands.
 
 ### Supported commands
 
-- `php artisan migrate`
-- `php artisan migrate:fresh`
-- `php artisan migrate:rollback`
+- `php artisan tenancy:migrate`
+- `php artisan tenancy:migrate:fresh`
+- `php artisan tenancy:migrate:rollback`
 
 ### Scope options
 
@@ -76,18 +76,32 @@ This package replaces Laravel migration commands with tenant-aware variants.
 Rules:
 - only one scope flag can be used at once
 - if no scope flag is given, landlord + tenants are run
-- `--database` and `--path` delegate to default Laravel command behavior
+- in single-database setups, registered default, landlord, and tenant migration paths are run on the default connection
+- in multi-database setups, `--database` and explicit `--path` input delegate to Laravel's default command behavior
 
 ### Graceful mode
 
-For `migrate` and `migrate:rollback`, use:
+For `tenancy:migrate` and `tenancy:migrate:rollback`, use:
 
 ```bash
-php artisan migrate --tenants --graceful
-php artisan migrate:rollback --tenants --graceful
+php artisan tenancy:migrate --tenants --graceful
+php artisan tenancy:migrate:rollback --tenants --graceful
 ```
 
 This returns success even when a tenant operation throws.
+
+### Custom path execution
+
+You can still target a custom migration path directly. In multi-database setups this intentionally falls back to Laravel's native migration behavior.
+
+Examples:
+
+```bash
+php artisan tenancy:migrate --path=database/migrations/custom
+php artisan tenancy:migrate:fresh --path=/absolute/path/to/migrations --realpath
+php artisan tenancy:migrate:rollback --path=database/migrations/custom
+php artisan tenancy:migrate:rollback --path=/absolute/path/to/migrations --realpath
+```
 
 ## Registering Migration Paths in Your Package/Module
 
