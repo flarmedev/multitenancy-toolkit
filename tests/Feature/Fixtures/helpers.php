@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Schema;
-use Spatie\Multitenancy\Models\Tenant;
 use Spatie\Multitenancy\Database\Factories\TenantFactory;
+use Spatie\Multitenancy\Models\Tenant;
 use Spatie\Multitenancy\Tasks\SwitchTenantDatabaseTask;
 
 function instantiate(): void

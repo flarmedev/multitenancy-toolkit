@@ -9,7 +9,5 @@ return new class extends Migration
         throw new RuntimeException('Intentional failing tenant migration.');
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

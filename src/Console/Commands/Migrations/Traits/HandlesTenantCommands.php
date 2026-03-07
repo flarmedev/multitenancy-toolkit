@@ -108,7 +108,7 @@ trait HandlesTenantCommands
 
     protected function hasTenantTable(string $landlordConnection): bool
     {
-        return Schema::connection($landlordConnection)->hasTable((new Tenant())->getTable());
+        return Schema::connection($landlordConnection)->hasTable((new Tenant)->getTable());
     }
 
     protected function selectedTenants(string $landlordConnection, ?bool &$tenantTableExists = null): EloquentCollection
@@ -116,7 +116,7 @@ trait HandlesTenantCommands
         $tenantTableExists = $this->hasTenantTable($landlordConnection);
 
         if (! $tenantTableExists) {
-            return new EloquentCollection();
+            return new EloquentCollection;
         }
 
         if ($tenant = $this->option('tenant')) {

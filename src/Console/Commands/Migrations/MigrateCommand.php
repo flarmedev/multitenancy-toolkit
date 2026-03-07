@@ -6,7 +6,6 @@ use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\HandlesTenantC
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\ResolvesMigrationPaths;
 use Flarme\MultitenancyToolkit\Database\Migrations\Migrator;
 use Illuminate\Database\Console\Migrations\MigrateCommand as BaseCommand;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Throwable;
 
 class MigrateCommand extends BaseCommand
@@ -60,7 +59,6 @@ class MigrateCommand extends BaseCommand
         }
 
         $tenantTableExists = true;
-        $tenants = new EloquentCollection();
 
         if ($this->shouldRunAgainstLandlord()) {
             $this->components->info('Running migrations for landlord database.');
@@ -110,5 +108,4 @@ class MigrateCommand extends BaseCommand
 
         return 0;
     }
-
 }
