@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Multitenancy\Contracts\IsTenant;
+use Throwable;
 
 trait HandlesTenantCommands
 {
@@ -108,7 +109,11 @@ trait HandlesTenantCommands
 
     protected function hasTenantTable(string $landlordConnection): bool
     {
-        return Schema::connection($landlordConnection)->hasTable(app(IsTenant::class)->getTable());
+        try {
+            return Schema::connection($landlordConnection)->hasTable(app(IsTenant::class)->getTable());
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     protected function selectedTenants(string $landlordConnection, ?bool &$tenantTableExists = null): EloquentCollection

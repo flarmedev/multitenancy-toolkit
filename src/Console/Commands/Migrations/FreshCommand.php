@@ -13,6 +13,7 @@ use Illuminate\Database\Events\DatabaseRefreshed;
 use Illuminate\Support\Facades\DB;
 use Spatie\Multitenancy\Models\Tenant;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
+use Throwable;
 
 class FreshCommand extends BaseCommand
 {
@@ -49,11 +50,11 @@ class FreshCommand extends BaseCommand
 
     public function handle(): int
     {
-        if ($this->isProhibited() || ! $this->confirmToProceed()) {
+        if ($this->isProhibited() || !$this->confirmToProceed()) {
             return self::FAILURE;
         }
 
-        if (! $this->usesMultipleDatabasesSetup()) {
+        if (!$this->usesMultipleDatabasesSetup()) {
             $this->components->info('Running fresh migrations on the default database.');
 
             $this->fresh($this->option('database'));
@@ -70,12 +71,12 @@ class FreshCommand extends BaseCommand
             return (int) parent::handle();
         }
 
-        if (! $this->ensureScopeOptionsAreValid()) {
+        if (!$this->ensureScopeOptionsAreValid()) {
             return self::FAILURE;
         }
 
         $defaultConnection = $this->resolveLandlordConnectionOrFail();
-        if (! $defaultConnection) {
+        if (!$defaultConnection) {
             return self::FAILURE;
         }
 
@@ -95,7 +96,7 @@ class FreshCommand extends BaseCommand
 
         if ($this->shouldRunAgainstTenant()) {
             $tenantConnection = $this->resolveTenantConnectionOrFail();
-            if (! $tenantConnection) {
+            if (!$tenantConnection) {
                 return self::FAILURE;
             }
 
@@ -116,7 +117,7 @@ class FreshCommand extends BaseCommand
             }
         }
 
-        if ($this->shouldRunAgainstLandlord() && $tenantTableExistedBefore && ! $this->hasTenantTable($defaultConnection)) {
+        if ($this->shouldRunAgainstLandlord() && $tenantTableExistedBefore && !$this->hasTenantTable($defaultConnection)) {
             $this->dropTenantDatabases($tenantDatabases);
         }
 
@@ -126,23 +127,28 @@ class FreshCommand extends BaseCommand
     protected function fresh(?string $database): int
     {
         $this->migrator->usingConnection($database, function () use ($database): void {
-            if ($this->migrator->repositoryExists()) {
-                $this->newLine();
+            try {
+                if ($this->migrator->repositoryExists()) {
+                    $this->newLine();
 
-                if ($this->shouldUseSqliteDropFallback($database)) {
-                    $this->components->task('Dropping all tables', function () use ($database): bool {
-                        $this->dropAllSqliteObjectsInTransaction($database);
+                    if ($this->shouldUseSqliteDropFallback($database)) {
+                        $this->components->task('Dropping all tables', function () use ($database): bool {
+                            $this->dropAllSqliteObjectsInTransaction($database);
 
-                        return true;
-                    });
-                } else {
-                    $this->components->task('Dropping all tables', fn () => $this->callSilent('db:wipe', array_filter([
-                        '--database' => $database,
-                        '--drop-views' => $this->option('drop-views'),
-                        '--drop-types' => $this->option('drop-types'),
-                        '--force' => true,
-                    ])) === SymfonyCommand::SUCCESS);
+                            return true;
+                        });
+                    } else {
+                        $this->components->task('Dropping all tables',
+                            fn() => $this->callSilent('db:wipe', array_filter([
+                                    '--database' => $database,
+                                    '--drop-views' => $this->option('drop-views'),
+                                    '--drop-types' => $this->option('drop-types'),
+                                    '--force' => true,
+                                ])) === SymfonyCommand::SUCCESS);
+                    }
                 }
+            } catch (Throwable $e) {
+                $this->components->warn('No tables were dropped.');
             }
         });
 
@@ -184,7 +190,7 @@ class FreshCommand extends BaseCommand
 
     protected function getMigrationPath(): string
     {
-        return $this->laravel->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
+        return $this->laravel->databasePath().DIRECTORY_SEPARATOR.'migrations';
     }
 
     protected function dropAllSqliteObjectsInTransaction(?string $database): void
