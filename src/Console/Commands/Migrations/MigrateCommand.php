@@ -6,8 +6,12 @@ use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\HandlesTenantC
 use Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits\ResolvesMigrationPaths;
 use Flarme\MultitenancyToolkit\Database\Migrations\Migrator;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Console\Migrations\MigrateCommand as BaseCommand;
+use RuntimeException;
 use Throwable;
+
+use function Laravel\Prompts\confirm;
 
 class MigrateCommand extends BaseCommand
 {
@@ -45,7 +49,7 @@ class MigrateCommand extends BaseCommand
      */
     public function handle(): int
     {
-        if (! $this->confirmToProceed()) {
+        if (!$this->confirmToProceed()) {
             return self::FAILURE;
         }
 
@@ -55,12 +59,12 @@ class MigrateCommand extends BaseCommand
             return parent::handle();
         }
 
-        if (! $this->ensureScopeOptionsAreValid()) {
+        if (!$this->ensureScopeOptionsAreValid()) {
             return self::FAILURE;
         }
 
         $defaultConnection = $this->resolveLandlordConnectionOrFail();
-        if (! $defaultConnection) {
+        if (!$defaultConnection) {
             return self::FAILURE;
         }
 
@@ -76,7 +80,7 @@ class MigrateCommand extends BaseCommand
 
         if ($this->shouldRunAgainstTenant()) {
             $connection = $this->resolveTenantConnectionOrFail();
-            if (! $connection) {
+            if (!$connection) {
                 return self::FAILURE;
             }
 
@@ -113,5 +117,64 @@ class MigrateCommand extends BaseCommand
         }
 
         return 0;
+    }
+
+
+    /**
+     * Create a missing MySQL or Postgres database.
+     *
+     * @param  Connection  $connection
+     * @return bool
+     *
+     * @throws RuntimeException
+     */
+    protected function createMissingMySqlOrPgsqlDatabase($connection): bool
+    {
+        if ($this->laravel['config']->get("database.connections.{$connection->getName()}.database") !== $connection->getDatabaseName()) {
+            return false;
+        }
+
+        if (!$this->option('force') && $this->option('no-interaction')) {
+            return false;
+        }
+
+        if (!$this->option('force') && !$this->option('no-interaction')) {
+            $this->components->warn("The database '{$connection->getDatabaseName()}' does not exist on the '{$connection->getName()}' connection.");
+
+            if (!confirm('Would you like to create it?', default: true)) {
+                $this->components->info('Operation cancelled. No database was created.');
+
+                throw new RuntimeException('Database was not created. Aborting migration.');
+            }
+        }
+        try {
+            $this->laravel['config']->set(
+                "database.connections.{$connection->getName()}.database",
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => null,
+                    'pgsql' => 'postgres',
+                },
+            );
+
+            $this->laravel['db']->purge();
+
+            $freshConnection = $this->migrator->resolveConnection(
+                $this->option('database')
+                ?? $this->laravel['config']->get('multitenancy.landlord_database_connection_name')
+            );
+
+            /** @var bool */
+            return tap($freshConnection->unprepared(
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => "CREATE DATABASE IF NOT EXISTS `{$connection->getDatabaseName()}`",
+                    'pgsql' => 'CREATE DATABASE "'.$connection->getDatabaseName().'"',
+                }
+            ), function () {
+                $this->laravel['db']->purge();
+            });
+        } finally {
+            $this->laravel['config']->set("database.connections.{$connection->getName()}.database",
+                $connection->getDatabaseName());
+        }
     }
 }
