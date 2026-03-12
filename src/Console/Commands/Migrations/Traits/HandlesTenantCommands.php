@@ -4,9 +4,9 @@ namespace Flarme\MultitenancyToolkit\Console\Commands\Migrations\Traits;
 
 use Illuminate\Console\Concerns\InteractsWithIO;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Multitenancy\Contracts\IsTenant;
-use Spatie\Multitenancy\Models\Tenant;
 
 trait HandlesTenantCommands
 {
@@ -80,7 +80,7 @@ trait HandlesTenantCommands
 
     protected function shouldDelegate(): bool
     {
-        return ! $this->usesMultipleDatabasesSetup()
+        return !$this->usesMultipleDatabasesSetup()
             || ($this->hasOption('database') && $this->option('database'))
             || ($this->hasOption('path') && $this->option('path'));
     }
@@ -108,23 +108,23 @@ trait HandlesTenantCommands
 
     protected function hasTenantTable(string $landlordConnection): bool
     {
-        return Schema::connection($landlordConnection)->hasTable((new Tenant)->getTable());
+        return Schema::connection($landlordConnection)->hasTable(app(IsTenant::class)->getTable());
     }
 
     protected function selectedTenants(string $landlordConnection, ?bool &$tenantTableExists = null): EloquentCollection
     {
         $tenantTableExists = $this->hasTenantTable($landlordConnection);
 
-        if (! $tenantTableExists) {
+        if (!$tenantTableExists) {
             return new EloquentCollection;
         }
 
         if ($tenant = $this->option('tenant')) {
             /** @phpstan-ignore-next-line */
-            return Tenant::where('id', $tenant)->get();
+            return app(IsTenant::class)::where('id', $tenant)->get();
         }
 
-        return Tenant::all();
+        return app(IsTenant::class)::all();
     }
 
     protected function tenantTableExistsOrReport(bool $tenantTableExists): bool
@@ -150,16 +150,19 @@ trait HandlesTenantCommands
     }
 
     /**
-     * @param  callable(Tenant): void  $callback
+     * @param  callable(IsTenant): void  $callback
      */
-    protected function runForEachTenant(EloquentCollection $tenants, string $operation, callable $callback): void
+    protected function runForEachTenant(Collection $tenants, string $operation, callable $callback): void
     {
-        $tenants->eachCurrent(function (Tenant $tenant) use ($operation, $callback): void {
+        $tenants->each(function (IsTenant $tenant) use ($operation, $callback): void {
+            $tenant->makeCurrent();
             $current = $tenant->name ?? $tenant->getKey();
 
             $this->components->info("Running {$operation} for tenant {$current}");
 
             $callback($tenant);
+
+            $tenant->forget();
         });
     }
 }
