@@ -13,7 +13,7 @@ describe('Impersonation disabled', function () {
         $tenant = new ImpersonatingTenant;
 
         expect(fn () => $tenant->impersonate(1))
-            ->toThrow(\LogicException::class, 'Tenant impersonation is not enabled.');
+            ->toThrow(LogicException::class, 'Tenant impersonation is not enabled.');
     });
 });
 
