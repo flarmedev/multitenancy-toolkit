@@ -81,7 +81,7 @@ trait HandlesTenantCommands
 
     protected function shouldDelegate(): bool
     {
-        return !$this->usesMultipleDatabasesSetup()
+        return ! $this->usesMultipleDatabasesSetup()
             || ($this->hasOption('database') && $this->option('database'))
             || ($this->hasOption('path') && $this->option('path'));
     }
@@ -120,7 +120,7 @@ trait HandlesTenantCommands
     {
         $tenantTableExists = $this->hasTenantTable($landlordConnection);
 
-        if (!$tenantTableExists) {
+        if (! $tenantTableExists) {
             return new EloquentCollection;
         }
 
