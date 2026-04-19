@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Http\Request;
 use Spatie\Multitenancy\Models\Tenant;
+use Spatie\Multitenancy\TenantFinder\DomainTenantFinder;
 use Tests\Feature\Fixtures\Models\ImpersonatedUser;
 use Tests\Feature\Fixtures\Models\ImpersonatingTenant;
 
@@ -21,6 +23,7 @@ describe('Impersonation enabled', function () {
     beforeEach(function () {
         instantiate();
         enableImpersonationForTests();
+        config()->set('multitenancy.tenant_finder', DomainTenantFinder::class);
     });
 
     it('consumes a signed impersonation link and authenticates the tenant user', function () {
@@ -100,6 +103,51 @@ describe('Impersonation enabled', function () {
         $this->get($url)->assertRedirect('/trait-dashboard');
 
         $this->assertAuthenticatedAs($user, 'web');
+    });
+
+    it('uses the current tenant request origin when generating impersonation URLs', function () {
+        $tenant = ImpersonatingTenant::query()->create([
+            'name' => 'domain-tenant',
+            'domain' => 'domain-tenant.test',
+            'database' => persistentTenantDatabasePath('domain-tenant'),
+        ]);
+
+        ensureTenantUsersTable($tenant);
+        $tenant->makeCurrent();
+
+        $user = ImpersonatedUser::query()->create([
+            'name' => 'Domain User',
+            'email' => 'domain.user@example.test',
+            'password' => 'secret',
+        ]);
+
+        app()->instance('request', Request::create('https://domain-tenant.test/current-dashboard', 'GET'));
+
+        $generatedUrl = $tenant->impersonate($user, '/domain-dashboard');
+
+        expect($generatedUrl)->toStartWith('https://domain-tenant.test/');
+    });
+
+    it('can resolve a tenant-specific impersonation origin from the central domain', function () {
+        $tenant = ImpersonatingTenant::query()->create([
+            'name' => 'central-issued-tenant',
+            'domain' => 'central-issued-tenant.test',
+            'database' => persistentTenantDatabasePath('central-issued-tenant'),
+        ]);
+
+        ensureTenantUsersTable($tenant);
+
+        $user = ImpersonatedUser::query()->create([
+            'name' => 'Central User',
+            'email' => 'central.user@example.test',
+            'password' => 'secret',
+        ]);
+
+        app()->instance('request', Request::create('https://central.test/admin/tenants', 'GET'));
+
+        $generatedUrl = $tenant->impersonate($user, '/tenant-dashboard');
+
+        expect($generatedUrl)->toStartWith('https://central-issued-tenant.test/');
     });
 
     it('rejects impersonation links with tampered signatures', function () {

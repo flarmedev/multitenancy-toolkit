@@ -187,6 +187,11 @@ $url = $tenant->impersonate($userIdOrUserModel, '/dashboard');
 
 The URL is signed, temporary, and consumed through the package route.
 
+When a tenant request is already active, impersonation URLs reuse that request origin.
+If links are generated from a central domain and `multitenancy.tenant_finder` is
+Spatie's `DomainTenantFinder`, the package will fall back to the tenant's `domain`
+attribute to generate the signed URL on the tenant host.
+
 ## Development
 
 ```bash
